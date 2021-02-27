@@ -110,7 +110,7 @@ var game = {
 		this.activePlayers.forEach(player => {
 			player.position.y += player.speed.y;
 			player.speed.y += this.gravity;
-			player.duration = this.ticks / 5;
+			player.duration = this.ticks * this.delay / 1000;
 		});
 		this.objects.forEach(obj => {
 			obj.position.x -= this.speed;

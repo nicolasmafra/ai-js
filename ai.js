@@ -123,8 +123,8 @@ var aiInput = {
 		var textY = 120;
 		var textHeight = 17;
 		game.context.fillText("Generation: " + this.generationData.length, 20, textY += textHeight);
-		game.context.fillText("Max duration: " + Math.floor(maxduration), 20, textY += textHeight);
-		game.context.fillText("Current duration: " + Math.floor(durations[durations.length - 1]), 20, textY += textHeight);
+		game.context.fillText("Max duration: " + Math.floor(maxduration * 10) / 10, 20, textY += textHeight);
+		game.context.fillText("Current duration: " + Math.floor(durations[durations.length - 1] * 10) / 10, 20, textY += textHeight);
 		game.context.fillText("Total robots: " + this.players.length, 20, textY += textHeight);
 		game.context.fillText("Current alive: " + this.findRobots(game.activePlayers).length, 20, textY += textHeight);
 	},
