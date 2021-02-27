@@ -6,6 +6,7 @@ var aiInput = {
 	players: [],
 	better: null,
 	startWeights: null,
+	generation: 1,
 	generationData: [],
 	
 	isRobot: function(player) {
@@ -38,6 +39,13 @@ var aiInput = {
 		this.better = this.players[0];
 		return this.players;
 	},
+	onStart: function() {
+		if (this.generationData.length < this.generation) {
+			this.generationData.push({
+				duration: 0
+			});
+		}
+	},
 	updatePlayer: function(player) {
 		if (!this.isRobot(player)) {
 			return;
@@ -59,30 +67,26 @@ var aiInput = {
 	update: function() {
 		var robots = this.findRobots(game.activePlayers);
 		if (robots.length == 0) return;
-		
 		var robot = robots[0];
+		
+		this.generationData[this.generationData.length - 1].duration = robot.duration;
+		
 		for (var k = 0; k < this.layerQt.length; k++) {
 			var qt = this.layerQt[k];
 			for (var i = 0; i < qt; i++) {
 				var neuron = robot.neurons[k][i];
 				var position = this.neuronPosition(k, i);
 				var value = this.norm(neuron, 1, 255);
-				var r = value < 0 ? -(value + 10) : 0;
-				var g = value > 0 ? (value + 10) : 0;
-				var b = (255 - Math.abs(value));
-				game.context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
-				game.context.beginPath();
-				game.context.arc(position.x, position.y, 5, 0, 2 * Math.PI);
-				game.context.fill();
+				
 				if (k < this.layerQt.length - 1) {
 					var qt2 = this.layerQt[k + 1];
 					for (var j = 0; j < qt2; j++) {
 						var position2 = this.neuronPosition(k + 1, j);
 						var weigth = robot.weights[k][i * qt + j];
-						var wvalue = this.norm(weigth * (45 + value) / 300, 2, 255);
-						var rn = wvalue < 0 ? -(wvalue + 10) : 0;
-						var gn = wvalue > 0 ? (wvalue + 10) : 0;
-						var bn = (255 - Math.abs(wvalue));
+						var wvalue = this.norm(weigth * (45 + value) / 300, 1, 1);
+						var rn = wvalue < 0 ? 255 : 0;
+						var gn = wvalue > 0 ? 255 : 0;
+						var bn = 255 * (1 - Math.abs(wvalue));
 						var an = Math.abs(wvalue);
 						game.context.strokeStyle = "rgba(" + rn + "," + gn + ",0," + an + ")";
 						game.context.beginPath();
@@ -91,8 +95,38 @@ var aiInput = {
 						game.context.stroke();
 					}
 				}
+				
+				var r = value < 0 ? -(value + 10) : 0;
+				var g = value > 0 ? (value + 10) : 0;
+				var b = (255 - Math.abs(value));
+				game.context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
+				game.context.beginPath();
+				game.context.arc(position.x, position.y, 5, 0, 2 * Math.PI);
+				game.context.fill();
 			}
 		}
+		game.context.fillStyle = "white";
+		game.context.strokeStyle = "blue";
+		// draw generation progress
+		game.context.fillRect(20, 20, 300, 100);
+		var durations = this.generationData.map(d => d.duration);
+		var maxduration = Math.max.apply(null, durations);
+		game.context.beginPath();
+		game.context.moveTo(20, 120);
+		var width = Math.max(1, durations.length - 1);
+		for (var i = 0; i < durations.length; i++) {
+			game.context.lineTo(30 + 280 * i / width, 120 - 90 * (durations[i] / maxduration));
+		}
+		game.context.stroke();
+		// draw data
+		game.context.font = "15px Arial";
+		var textY = 120;
+		var textHeight = 17;
+		game.context.fillText("Generation: " + this.generationData.length, 20, textY += textHeight);
+		game.context.fillText("Max duration: " + Math.floor(maxduration), 20, textY += textHeight);
+		game.context.fillText("Current duration: " + Math.floor(durations[durations.length - 1]), 20, textY += textHeight);
+		game.context.fillText("Total robots: " + this.players.length, 20, textY += textHeight);
+		game.context.fillText("Current alive: " + this.findRobots(game.activePlayers).length, 20, textY += textHeight);
 	},
 	neuronPosition: function(k, i) {
 		return {x: game.canvasWidth / 2 + 50 * i, y: 30 + 80 * k};
@@ -119,9 +153,8 @@ var aiInput = {
 			var mutationFactor = this.maxMutationFactor * i / (this.players.length - 1);
 			p.weights = this.mutateWeights(weights, randomFactor, mutationFactor)
 		}
-		this.generationData.push({
-			distance: game.position
-		});
+		this.generationData[this.generationData.length -1].duration = this.better.duration;
+		this.generation++;
 		game.restart();
 	},
 	createNeurons: function() {

@@ -26,6 +26,7 @@ var humanInput = {
 
 function start() {
 	game.players = aiInput.createPlayers(300).slice();
+	game.onStartCallback = () => aiInput.onStart();
 	game.onPlayerUpdateCallback = p => aiInput.updatePlayer(p);
 	game.onUpdateCallback = () => aiInput.update();
 	game.onStopCallback = p => aiInput.nextGeneration(p);

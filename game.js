@@ -1,4 +1,5 @@
 var game = {
+	// constants
 	canvasWidth: 1000,
 	canvasHeight: 500,
 	groundHeight: 50,
@@ -13,22 +14,22 @@ var game = {
 	fallSpeed: -20,
 	minPlayerPosition: 20,
 	maxPlayerPosition: 80,
-	interval: null,
 	delay: 20,
 	minObjectInterval: 300,
 	maxObjectInterval: 1000,
 
-	randomInterval: 0,
+	// internal variables
 	stoped: true,
+	interval: null,
+	
+	// external variables
 	players: [],
-	activePlayers: [],
-	diedPlayers: [],
+	onStartCallback: null,
 	onPlayerUpdateCallback: null,
 	onUpdateCallback: null,
 	onStopCallback: null,
 	
 	start: function() {
-		//console.log("starting...");
 		if (!this.stoped) {
 			console.log("Already started.");
 			return;
@@ -54,17 +55,22 @@ var game = {
 			player.speed = {x: 0, y:0};
 			playerOffset += dist;
 		});
+		this.objectsCount = 0;
+		this.randomInterval = 0;
 		this.objects = [];
 		this.ticks = 0;
 		this.position = 0;
 		this.speed = this.initialSpeed;
-		this.lastObjectPosition = -this.canvasWidth;
+		
+		if (this.onStartCallback != null) {
+			this.onStartCallback();
+		}
+		
 		if (this.interval == null) {
 			this.interval = setInterval(() => this.update(), this.delay);
 		}
 	},
 	stop: function() {
-		//console.log("stoping...");
 		this.stoped = true;
 		if (this.interval != null) {
 			clearInterval(this.interval);
@@ -72,7 +78,6 @@ var game = {
 		}
 	},
 	restart: function() {
-		//console.log("restarting...");
 		this.stop();
 		this.start();
 	},
@@ -105,17 +110,19 @@ var game = {
 		this.activePlayers.forEach(player => {
 			player.position.y += player.speed.y;
 			player.speed.y += this.gravity;
-			player.distance = this.position;
+			player.duration = this.ticks / 5;
 		});
 		this.objects.forEach(obj => {
 			obj.position.x -= this.speed;
 		});
 		// object creation
-		this.objects = this.objects.filter(obj => obj.position.x >= -obj.size.x);
-		if (this.position - this.lastObjectPosition >= this.maxObjectInterval - this.randomInterval) {
+		this.objects = this.objects.filter(obj => obj.position.x >= -obj.size.x / 2);
+		if (this.position >= this.objectsCount * this.maxObjectInterval - this.randomInterval) {
 			this.objects.push(this.createObject());
-			this.lastObjectPosition += this.maxObjectInterval;
-			this.randomInterval = (this.maxObjectInterval - this.minObjectInterval) * Math.random();
+			this.objectsCount++;
+			if (this.position > 5 * this.maxObjectInterval) {
+				this.randomInterval = (this.maxObjectInterval - this.minObjectInterval) * Math.random();
+			}
 		}
 		// draw
 		if (this.mustDraw) {
@@ -134,9 +141,11 @@ var game = {
 				}
 			}
 		});
+		
 		if (this.onUpdateCallback != null) {
 			this.onUpdateCallback();
 		}
+		// stop trigger
 		if (this.activePlayers.length == 0) {
 			this.stoped = true;
 		}
