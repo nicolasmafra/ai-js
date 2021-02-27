@@ -24,16 +24,26 @@ var humanInput = {
 	}
 };
 
-function start() {
-	game.players = aiInput.createPlayers(1000).slice();
-	game.onStartCallback = () => aiInput.onStart();
-	game.onPlayerUpdateCallback = p => aiInput.updatePlayer(p);
-	game.onUpdateCallback = () => aiInput.update();
-	game.onStopCallback = p => aiInput.nextGeneration(p);
+function reconfig() {
+	var totalRobots = parseInt(document.getElementsByName("totalRobots")[0].value);
+	
+	game.stop();
+	game.players = totalRobots ? aiInput.createPlayers(totalRobots).slice() : [];
+	if (game.players.length > 0) {
+		game.onStartCallback = () => aiInput.onStart();
+		game.onPlayerUpdateCallback = p => aiInput.updatePlayer(p);
+		game.onUpdateCallback = () => aiInput.update();
+		game.onStopCallback = p => aiInput.nextGeneration(p);
+	} else {
+		game.onStartCallback = null;
+		game.onPlayerUpdateCallback = null;
+		game.onUpdateCallback = null;
+		game.onStopCallback = null;
+	}
 	
 	humanInput.config();
 	humanInput.createPlayer();
 	game.players.push(humanInput.obj);
 	
-	//game.start();
+	game.start();
 }

@@ -5,9 +5,13 @@
 		<script src="ai.js"></script>
 		<script src="main.js"></script>
 	</head>
-	<body onload="start()">
+	<body>
 		<h1>Artificial Inteligence in JavaScript</h1>
-		<p>Press space bar to start.</p>
-		<canvas></canvas>
+		<button onclick="reconfig()">config and restart</button>
+		<br><br>
+		<canvas width="1000" height="500" style="float:left"></canvas>
+		<div style="float:left; margin-left:10px">
+			<label for="totalRobots">Total Robots: </label><input name="totalRobots" value="1000" />
+		</div>
 	</body>
 </html>
