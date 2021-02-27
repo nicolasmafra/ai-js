@@ -117,7 +117,7 @@ var game = {
 		});
 		// object creation
 		this.objects = this.objects.filter(obj => obj.position.x >= -obj.size.x / 2);
-		if (this.position >= this.objectsCount * this.maxObjectInterval - this.randomInterval) {
+		if (this.objects.length < 2 && this.position >= this.objectsCount * this.maxObjectInterval - this.randomInterval) {
 			this.objects.push(this.createObject());
 			this.objectsCount++;
 			if (this.position > 5 * this.maxObjectInterval) {
