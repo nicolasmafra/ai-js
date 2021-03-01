@@ -25,10 +25,16 @@ var humanInput = {
 };
 
 function reconfig() {
-	var totalRobots = parseInt(document.getElementsByName("totalRobots")[0].value);
-	
 	game.stop();
+	
+	var totalRobots = parseInt(document.getElementsByName("totalRobots")[0].value);
+	var deathPercent = parseInt(document.getElementsByName("deathPercent")[0].value);
+	var betterPercent = parseInt(document.getElementsByName("betterPercent")[0].value);
+	
 	game.players = totalRobots ? aiInput.createPlayers(totalRobots).slice() : [];
+	game.deathPercent = deathPercent ? deathPercent : 0.7;
+	game.betterPercent = betterPercent ? betterPercent : 0.07;
+	
 	if (game.players.length > 0) {
 		game.onStartCallback = () => aiInput.onStart();
 		game.onPlayerUpdateCallback = p => aiInput.updatePlayer(p);

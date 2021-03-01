@@ -1,12 +1,14 @@
 var aiInput = {
-	layerQt: [9, 9, 2],
+	layerQt: [7, 7, 2],
 	maxMutationFactor: 2,
 	maxRandomFactor: 1,
+	deathPercent: 0.5,
+	betterPercent: 0.01,
 	
 	players: [],
-	better: null,
+	betters: null,
 	startWeights: null,
-	generation: 1,
+	generation: null,
 	generationData: [],
 	
 	isRobot: function(player) {
@@ -36,7 +38,10 @@ var aiInput = {
 			}
 			this.players.push(player);
 		}
-		this.better = this.players[0];
+		this.generation = 1;
+		this.generationData = [];
+		this.betters = [];
+		this.betters.push(this.players[0]);
 		return this.players;
 	},
 	onStart: function() {
@@ -50,19 +55,26 @@ var aiInput = {
 		if (!this.isRobot(player)) {
 			return;
 		}
-		var obj = game.objects.length <= 0 ? null : game.objects[0];
-		var obj2 = game.objects.length <= 1 ? null : game.objects[1];
+		var obj = this.objInfo(player, game.objects.length <= 0 ? null : game.objects[0]);
+		var obj2 = this.objInfo(player, game.objects.length <= 1 ? null : game.objects[1]);
 		player.neurons[0][1] = 2 * (player.position.y / game.canvasHeight) - 1;
 		player.neurons[0][2] = game.speed / 100;
-		player.neurons[0][3] = obj == null ? 0 : -2 * ((obj.position.x - player.position.x) / game.canvasWidth) + 1;
-		player.neurons[0][4] = obj == null ? 0 : 2 * (obj.size.x / 100) - 1;
-		player.neurons[0][5] = obj == null ? 0 : 2 * (obj.size.y / 100) - 1;
-		player.neurons[0][6] = obj2 == null ? 0 : -2 * ((obj2.position.x - player.position.x) / game.canvasWidth) + 1;
-		player.neurons[0][7] = obj2 == null ? 0 : 2 * (obj2.size.x / 100) - 1;
-		player.neurons[0][8] = obj2 == null ? 0 : 2 * (obj2.size.y / 100) - 1;
+		player.neurons[0][3] = obj.x;
+		player.neurons[0][4] = obj.y;
+		player.neurons[0][5] = obj2.x;
+		player.neurons[0][6] = obj2.y;
 		this.updateNet(player.neurons, player.weights);
 		player.input.up = player.neurons[2][0] > 0;
 		player.input.down = player.neurons[2][1] > 0;
+	},
+	objInfo: function(player, obj) {
+		var nearDistance = game.canvasWidth / 2;
+		var deltaX = obj == null ? 1000 * nearDistance : obj.position.x - player.position.x;
+		var deltaXAbs = Math.abs(deltaX);
+		var d = 1 - deltaXAbs / (deltaXAbs + nearDistance);
+		var x = deltaX > 0 ? d : -d;
+		var y = obj == null ? 0 : d * (obj.position.y - player.position.y) / (3 * game.playerHeight);
+		return {d: d, x: x, y: y};
 	},
 	update: function() {
 		var robots = this.findRobots(game.activePlayers);
@@ -135,25 +147,37 @@ var aiInput = {
 		return value < 0 ? 0 : value;
 	},
 	norm: function(value, maxOld, maxNew) {
-		return value < -maxOld ? -maxNew : value > maxOld ? maxNew : maxNew * value / maxOld;
+		return value < -maxOld ? -maxNew : value > maxOld ? maxNew : (maxNew * value / maxOld);
 	},
 	nextGeneration: function() {
 		var robots = this.findRobots(game.diedPlayers);
-		this.better = robots[robots.length - 1];
-		var betterWeights = this.better.weights;
-		for (var i = 0; i < this.players.length; i++) {
-			var p = this.players[i];
-			var weights = JSON.parse(JSON.stringify(betterWeights));
+		
+		var dieds = Math.floor(this.deathPercent * robots.length);
+		var betterCount = Math.ceil(this.betterPercent * (robots.length - dieds))
+		this.betters = [];
+		var bettersWeights = [];
+		var b = 1;
+		for (var i = 0; i < betterCount; i++) {
+			var better = robots[robots.length - (b++)];
+			this.betters.push(better);
+			bettersWeights.push(JSON.parse(JSON.stringify(better.weights)));
+		}
+		
+		b = 0;
+		for (var i = 0; i < dieds; i++) {
+			var p = robots[i];
+			var weights = JSON.parse(JSON.stringify(bettersWeights[b++ % betterCount]));
 			if (i == 0) {
 				p.weights = weights;
 				continue;
 			};
 			
-			var randomFactor = this.maxRandomFactor * i / (this.players.length - 1);
-			var mutationFactor = this.maxMutationFactor * i / (this.players.length - 1);
-			p.weights = this.mutateWeights(weights, randomFactor, mutationFactor)
+			var ratio = i / (dieds - 1);
+			var randomFactor = this.maxRandomFactor * ratio;
+			var mutationFactor = this.maxMutationFactor * ratio;
+			p.weights = this.mutateWeights(weights, randomFactor, mutationFactor);
 		}
-		this.generationData[this.generationData.length -1].duration = this.better.duration;
+		this.generationData[this.generationData.length -1].duration = this.betters[0].duration;
 		this.generation++;
 		game.restart();
 	},
@@ -209,12 +233,12 @@ var aiInput = {
 		return weights;
 	},
 	save: function() {
-		localStorage.setItem('weights', this.better.weights);
+		localStorage.setItem('weights', this.betters[0].weights);
 	},
 	load: function() {
 		this.startWeights = localStorage.getItem('weights');
-		if (this.better != null) {
-			this.better.weights = this.startWeights;
+		if (this.betters != null) {
+			this.betters[0].weights = this.startWeights;
 		}
 	}
 };

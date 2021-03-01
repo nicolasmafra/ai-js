@@ -17,6 +17,8 @@ var game = {
 	delay: 20,
 	minObjectInterval: 300,
 	maxObjectInterval: 1000,
+	easyInterval: 10000,
+	objectFlyHeight: 100,
 
 	// internal variables
 	stoped: true,
@@ -120,7 +122,7 @@ var game = {
 		if (this.objects.length < 2 && this.position >= this.objectsCount * this.maxObjectInterval - this.randomInterval) {
 			this.objects.push(this.createObject());
 			this.objectsCount++;
-			if (this.position > 5 * this.maxObjectInterval) {
+			if (this.position > this.easyInterval) {
 				this.randomInterval = (this.maxObjectInterval - this.minObjectInterval) * Math.random();
 			}
 		}
@@ -187,11 +189,14 @@ var game = {
 		};
 	},
 	createObject() {
-		var size = {x: 160 - 5 * Math.random(), y: 20};
+		var size = {x: 150, y: 20};
+		var yDelta = this.position <= this.easyInterval ? 0 : (Math.random() > 0.8 ? this.objectFlyHeight : 0)
 		return {
 			color: "white",
 			size: size,
-			position: {x: this.canvasWidth, y: this.ground.position.y + this.ground.size.y / 2 + size.y / 2 + 20 * Math.random()}
+			position: {
+				x: this.canvasWidth,
+				y: this.ground.position.y + this.ground.size.y / 2 + size.y / 2 + yDelta}
 		};
 	}
 };
