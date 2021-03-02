@@ -40,8 +40,6 @@ var aiInput = {
 		}
 		this.generation = 1;
 		this.generationData = [];
-		this.betters = [];
-		this.betters.push(this.players[0]);
 		return this.players;
 	},
 	onStart: function() {
@@ -50,6 +48,7 @@ var aiInput = {
 				duration: 0
 			});
 		}
+		aiInput.load();
 	},
 	updatePlayer: function(player) {
 		if (!this.isRobot(player)) {
@@ -162,6 +161,7 @@ var aiInput = {
 			this.betters.push(better);
 			bettersWeights.push(JSON.parse(JSON.stringify(better.weights)));
 		}
+		this.save();
 		
 		b = 0;
 		for (var i = 0; i < robots.length; i++) {
@@ -250,12 +250,18 @@ var aiInput = {
 		return 2 * Math.random() - 1;
 	},
 	save: function() {
-		localStorage.setItem('weights', this.betters[0].weights);
+		localStorage.setItem('weights', JSON.stringify(this.betters[0].weights));
 	},
 	load: function() {
-		this.startWeights = localStorage.getItem('weights');
-		if (this.betters != null) {
-			this.betters[0].weights = this.startWeights;
+		if (localStorage.getItem('weights') === null) {
+			return;
 		}
+		this.startWeights = JSON.parse(localStorage.getItem('weights'));
+		if (this.players.length > 0) {
+			this.players[0].weights = this.startWeights;
+		}
+	},
+	clearMemory: function() {
+		localStorage.removeItem('weights');
 	}
 };

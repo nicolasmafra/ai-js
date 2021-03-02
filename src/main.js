@@ -55,3 +55,8 @@ function reconfig() {
 	
 	game.start();
 }
+
+function clearMemory() {
+	aiInput.clearMemory();
+	reconfig();
+}
