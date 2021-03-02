@@ -17,6 +17,7 @@ var game = {
 	delay: 20,
 	minObjectInterval: 300,
 	maxObjectInterval: 1000,
+	offsetObjectInterval: -200, // environment kill all "always jumping" player
 	easyInterval: 10000,
 	objectFlyHeight: 100,
 
@@ -119,7 +120,7 @@ var game = {
 		});
 		// object creation
 		this.objects = this.objects.filter(obj => obj.position.x >= -obj.size.x / 2);
-		if (this.objects.length < 2 && this.position >= this.objectsCount * this.maxObjectInterval - this.randomInterval) {
+		if (this.objects.length < 2 && this.position + this.offsetObjectInterval >= this.objectsCount * this.maxObjectInterval - this.randomInterval) {
 			this.objects.push(this.createObject());
 			this.objectsCount++;
 			if (this.position > this.easyInterval) {

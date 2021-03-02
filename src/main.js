@@ -30,10 +30,12 @@ function reconfig() {
 	var totalRobots = parseInt(document.getElementsByName("totalRobots")[0].value);
 	var deathPercent = parseFloat(document.getElementsByName("deathPercent")[0].value);
 	var betterPercent = parseFloat(document.getElementsByName("betterPercent")[0].value);
+	var maxMutationFactor = parseInt(document.getElementsByName("maxMutationFactor")[0].value);
 	
 	game.players = totalRobots ? aiInput.createPlayers(totalRobots).slice() : [];
 	game.deathPercent = deathPercent ? deathPercent : 0.7;
 	game.betterPercent = betterPercent ? betterPercent : 0.07;
+	game.maxMutationFactor = maxMutationFactor ? maxMutationFactor : 4;
 	
 	if (game.players.length > 0) {
 		game.onStartCallback = () => aiInput.onStart();

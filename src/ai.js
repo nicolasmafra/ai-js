@@ -1,7 +1,7 @@
 var aiInput = {
 	layerQt: [7, 7, 2],
 	maxMutationFactor: 2,
-	maxRandomFactor: 1,
+	minRandomFactor: 0.5,
 	deathPercent: 0.5,
 	betterPercent: 0.01,
 	
@@ -58,7 +58,7 @@ var aiInput = {
 		var obj = this.objInfo(player, game.objects.length <= 0 ? null : game.objects[0]);
 		var obj2 = this.objInfo(player, game.objects.length <= 1 ? null : game.objects[1]);
 		player.neurons[0][1] = 2 * (player.position.y / game.canvasHeight) - 1;
-		player.neurons[0][2] = game.speed / 100;
+		player.neurons[0][2] = game.speed / 50;
 		player.neurons[0][3] = obj.x;
 		player.neurons[0][4] = obj.y;
 		player.neurons[0][5] = obj2.x;
@@ -68,12 +68,12 @@ var aiInput = {
 		player.input.down = player.neurons[2][1] > 0;
 	},
 	objInfo: function(player, obj) {
-		var nearDistance = game.canvasWidth / 2;
+		var nearDistance = game.canvasWidth;
 		var deltaX = obj == null ? 1000 * nearDistance : obj.position.x - player.position.x;
 		var deltaXAbs = Math.abs(deltaX);
 		var d = 1 - deltaXAbs / (deltaXAbs + nearDistance);
 		var x = deltaX > 0 ? d : -d;
-		var y = obj == null ? 0 : d * (obj.position.y - player.position.y) / (3 * game.playerHeight);
+		var y = obj == null ? 0 : x * (obj.position.y - player.position.y) / (3 * game.playerHeight);
 		return {d: d, x: x, y: y};
 	},
 	update: function() {
@@ -173,7 +173,7 @@ var aiInput = {
 			};
 			
 			var ratio = i / (dieds - 1);
-			var randomFactor = this.maxRandomFactor * ratio;
+			var randomFactor = this.minRandomFactor + (1 - this.minRandomFactor) * ratio;
 			var mutationFactor = this.maxMutationFactor * ratio;
 			p.weights = this.mutateWeights(weights, randomFactor, mutationFactor);
 		}
@@ -199,27 +199,29 @@ var aiInput = {
 			var kWeights = [];
 			var qt = this.layerQt[k] * this.layerQt[k + 1];
 			for (var i = 0; i < qt; i++) {
-				kWeights.push(2 * Math.random() - 1);
+				kWeights.push(this.randomWeight());
 			}
 			weights.push(kWeights);
 		}
 		return weights;
 	},
 	updateNet: function(neurons, weights) {
+		neurons[0][0] = 1; // bias
 		for (var k = 1; k < this.layerQt.length; k++) {
 			var qtInput = this.layerQt[k - 1];
 			var qtOutput = this.layerQt[k];
 			for (var o = 0; o < qtOutput; o++) {
+				if (o == 0 && k < this.layerQt.length - 1) {
+					neurons[k][0] = 1; // bias
+					continue;
+				}
 				var sum = 0;
 				for (var i = 0; i < qtInput; i++) {
 					sum += neurons[k - 1][i] * weights[k - 1][o * qtInput + i];
 				}
 				// activation function = ReLU
-				neurons[k][o] = this.relu(sum, 10);
+				neurons[k][o] = this.relu(sum);
 			}
-		}
-		for (var k = 0; k < this.layerQt.length - 1; k++) {
-			neurons[k][0] = 1;
 		}
 	},
 	mutateWeights: function(weights, randomFactor, mutationFactor) {
@@ -228,9 +230,12 @@ var aiInput = {
 			var kWeights = weights[k];
 			var qt = this.layerQt[k] * this.layerQt[k + 1];
 			var i = Math.floor(qt * Math.random());
-			kWeights[i] = (1 - randomFactor) * kWeights[i] + randomFactor * (2 * Math.random() - 1);
+			kWeights[i] = (1 - randomFactor) * kWeights[i] + randomFactor * this.randomWeight();
 		}
 		return weights;
+	},
+	randomWeight: function() {
+		return 2 * Math.random() - 1;
 	},
 	save: function() {
 		localStorage.setItem('weights', this.betters[0].weights);
