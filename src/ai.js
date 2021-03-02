@@ -1,7 +1,7 @@
 var aiInput = {
 	layerQt: [7, 7, 2],
 	maxMutationFactor: 2,
-	minRandomFactor: 0.5,
+	randomFactor: 1,
 	deathPercent: 0.5,
 	betterPercent: 0.01,
 	
@@ -164,18 +164,17 @@ var aiInput = {
 		}
 		
 		b = 0;
-		for (var i = 0; i < dieds; i++) {
+		for (var i = 0; i < robots.length; i++) {
 			var p = robots[i];
 			var weights = JSON.parse(JSON.stringify(bettersWeights[b++ % betterCount]));
-			if (i == 0) {
+			if (i < betterCount) {
 				p.weights = weights;
 				continue;
 			};
 			
-			var ratio = i / (dieds - 1);
-			var randomFactor = this.minRandomFactor + (1 - this.minRandomFactor) * ratio;
+			var ratio = (i - betterCount) / dieds;
 			var mutationFactor = this.maxMutationFactor * ratio;
-			p.weights = this.mutateWeights(weights, randomFactor, mutationFactor);
+			p.weights = this.mutateWeights(weights, mutationFactor);
 		}
 		this.generationData[this.generationData.length -1].duration = this.betters[0].duration;
 		this.generation++;
@@ -224,13 +223,13 @@ var aiInput = {
 			}
 		}
 	},
-	mutateWeights: function(weights, randomFactor, mutationFactor) {
+	mutateWeights: function(weights, mutationFactor) {
 		for (var n = 0; n < mutationFactor; n++) {
 			var k = Math.floor((this.layerQt.length - 1) * Math.random());
 			var kWeights = weights[k];
 			var qt = this.layerQt[k] * this.layerQt[k + 1];
 			var i = Math.floor(qt * Math.random());
-			kWeights[i] = (1 - randomFactor) * kWeights[i] + randomFactor * this.randomWeight();
+			kWeights[i] = (1 - this.randomFactor) * kWeights[i] + this.randomFactor * this.randomWeight();
 		}
 		return weights;
 	},

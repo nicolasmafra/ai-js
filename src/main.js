@@ -35,7 +35,7 @@ function reconfig() {
 	game.players = totalRobots ? aiInput.createPlayers(totalRobots).slice() : [];
 	game.deathPercent = deathPercent ? deathPercent : 0.7;
 	game.betterPercent = betterPercent ? betterPercent : 0.07;
-	game.maxMutationFactor = maxMutationFactor ? maxMutationFactor : 4;
+	game.maxMutationFactor = maxMutationFactor ? maxMutationFactor : 100;
 	
 	if (game.players.length > 0) {
 		game.onStartCallback = () => aiInput.onStart();
