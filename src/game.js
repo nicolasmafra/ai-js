@@ -15,9 +15,10 @@ var game = {
 	minPlayerPosition: 20,
 	maxPlayerPosition: 80,
 	delay: 20,
-	minObjectInterval: 300,
+	objectWidth: 150,
+	minObjectInterval: 400,
 	maxObjectInterval: 1000,
-	offsetObjectInterval: -200, // environment kill all "always jumping" player
+	offsetObjectInterval: 200, // environment kill all "always jumping" player
 	easyInterval: 10000,
 	objectFlyHeight: 100,
 
@@ -190,13 +191,13 @@ var game = {
 		};
 	},
 	createObject() {
-		var size = {x: 150, y: 20};
+		var size = {x: this.objectWidth, y: 20};
 		var yDelta = this.position <= this.easyInterval ? 0 : (Math.random() > 0.8 ? this.objectFlyHeight : 0)
 		return {
 			color: "white",
 			size: size,
 			position: {
-				x: this.canvasWidth,
+				x: this.canvasWidth + size.x / 2 + this.speed,
 				y: this.ground.position.y + this.ground.size.y / 2 + size.y / 2 + yDelta}
 		};
 	}
