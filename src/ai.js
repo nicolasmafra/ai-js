@@ -224,12 +224,25 @@ var aiInput = {
 		}
 	},
 	mutateWeights: function(weights, mutationFactor) {
+		var kQt = [];
+		var total = 0;
+		var cumulativeKQt = [];
+		for (var kw = 0; kw < this.layerQt.length - 1; kw++) {
+			var qt = this.layerQt[kw] * this.layerQt[kw + 1];
+			kQt.push(qt);
+			total += qt;
+			cumulativeKQt.push(total);
+		}
+
 		for (var n = 0; n < mutationFactor; n++) {
-			var k = Math.floor((this.layerQt.length - 1) * Math.random());
-			var kWeights = weights[k];
-			var qt = this.layerQt[k] * this.layerQt[k + 1];
-			var i = Math.floor(qt * Math.random());
-			kWeights[i] = (1 - this.randomFactor) * kWeights[i] + this.randomFactor * this.randomWeight();
+			var x = Math.floor(total * Math.random());
+			var kw = 0;
+			var i = x;
+			while (x >= cumulativeKQt[kw]) {
+				kw++;
+				i -= kQt[kw];
+			}
+			weights[kw][i] = (1 - this.randomFactor) * weights[kw][i] + this.randomFactor * this.randomWeight();
 		}
 		return weights;
 	},

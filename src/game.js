@@ -123,7 +123,6 @@ var game = {
 		this.objects = this.objects.filter(obj => obj.position.x >= -obj.size.x / 2);
 		if (this.objects.length < 2 && this.position + this.offsetObjectInterval >= this.objectsCount * this.maxObjectInterval - this.randomInterval) {
 			this.objects.push(this.createObject());
-			this.objectsCount++;
 			if (this.position > this.easyInterval) {
 				this.randomInterval = (this.maxObjectInterval - this.minObjectInterval) * Math.random();
 			}
@@ -191,8 +190,9 @@ var game = {
 		};
 	},
 	createObject() {
+		this.objectsCount++;
 		var size = {x: this.objectWidth, y: 20};
-		var yDelta = this.position <= this.easyInterval ? 0 : (Math.random() > 0.8 ? this.objectFlyHeight : 0)
+		var yDelta = this.objectsCount == 2 || Math.random() < 0.2 ? this.objectFlyHeight : 0;
 		return {
 			color: "white",
 			size: size,
