@@ -28,8 +28,8 @@ function reconfig() {
 	game.stop();
 	
 	var totalRobots = parseInt(document.getElementsByName("totalRobots")[0].value);
-	var deathPercent = parseInt(document.getElementsByName("deathPercent")[0].value);
-	var betterPercent = parseInt(document.getElementsByName("betterPercent")[0].value);
+	var deathPercent = parseFloat(document.getElementsByName("deathPercent")[0].value);
+	var betterPercent = parseFloat(document.getElementsByName("betterPercent")[0].value);
 	
 	game.players = totalRobots ? aiInput.createPlayers(totalRobots).slice() : [];
 	game.deathPercent = deathPercent ? deathPercent : 0.7;
