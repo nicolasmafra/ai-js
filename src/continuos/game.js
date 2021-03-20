@@ -1,7 +1,7 @@
 var game = {
 	// constants
-	canvasWidth: 500,
-	canvasHeight: 500,
+	screenWidth: 500,
+	screenHeight: 500,
 	mustDraw: true,
 	delay: 20,
 
@@ -14,9 +14,9 @@ var game = {
 	foodColor: [1, 0, 0],
 	visionRange: 500,
 	bulletSize: 2,
-	bulletColor: [0, 0, 0],
-	walkStep: 1,
-	rotationStep: 0.05,
+	bulletColor: [0, 0, 0.5],
+	walkStep: 2,
+	rotationStep: 0.1,
 	tiredLevel: 0.3,
 	minMultiplier: 0.5,
 	bulletSpeed: 2,
@@ -26,6 +26,7 @@ var game = {
 	// internal variables
 	stoped: true,
 	interval: null,
+	onUpdateCallback: null,
 	
 	// external variables
 	players: [],
@@ -40,8 +41,36 @@ var game = {
 		var player = {
 			type: "player",
 			label: label,
-			input: [0,0,0,0,0],
-			output: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			input: [
+				0, // walk
+				0, // turn right
+				0, // turn left
+				0, // shoot
+				0, // eat
+				0, // object size to see (large ou small)
+				0, // object type to see (player vs foodSpot, bullet vs food)
+				0, // object index to see (-1 to n)
+			],
+			output: [
+				0, // hungry (bad)
+				0, // pain (bad)
+				0, // seeing nothing
+
+				0, // self position x
+				0, // self position y
+				0, // self size
+				0, // self angle
+				0, // length of array of object type seen
+				0, // distance x of object seen
+				0, // distance y of object seen
+				0, // size of object type seen
+				0, // hue of object type seen (red vs blue)
+				0, // angle diff of object seen
+
+				0, // saciety (good)
+				0, // near to food
+				0, // seeing something
+			],
 
 			position: {x: 0, y: 0},
 			size: this.playerSize,
@@ -68,11 +97,6 @@ var game = {
 			return;
 		}
 		this.stoped = false;
-		
-		this.canvas = document.getElementsByTagName("canvas")[0];
-		this.canvas.width = this.canvasWidth;
-		this.canvas.height = this.canvasHeight;
-		this.context = this.canvas.getContext("2d");
 		
 		this.createObjects();
 		
@@ -138,10 +162,18 @@ var game = {
 			console.log("interval not stoping...");
 			return;
 		}
+
 		this.players.forEach(p => this.processInput(p));
+
 		this.processPhysics();
+
+		this.players.forEach(p => this.updateOutput(p));
+
 		if (this.mustDraw)
 			this.draw();
+
+		if (this.onUpdateCallback != null)
+			this.onUpdateCallback();
 		
 		if (this.stoped) {
 			this.stop();
@@ -199,13 +231,79 @@ var game = {
 				player.ate = true;
 			}
 		}
+		
+		// vision
+		var sizeAsk = player.input[5];
+		var hueAsk = player.input[6];
+		var array = [];
+		if (sizeAsk > 0.2 && sizeAsk <= 0.6) {
+			if (hueAsk > 0.2 && hueAsk <= 0.6) {
+				array = this.foods;
+			} else if (hueAsk > 0.6) {
+				array = this.bullets;
+			}
+		} else if (sizeAsk > 0.6) {
+			if (hueAsk > 0.2 && hueAsk <= 0.6) {
+				array = this.foodSpots;
+			} else if (hueAsk > 0.6) {
+				array = this.players;
+			}
+		}
+		var i = array.length == 0 ? -1 : (Math.floor(player.input[7] * array.length) - 1);
+		if (i >= array.length) i = array.length - 1;
+
+		var item = i < 0 ? null : array[i];
+		player.seeing = item;
+		player.arraySeeing = array;
 	},
 
 
-	processPhysics() {
+	updateOutput: function(player) {
+		var item = player.seeing;
+		var array = player.arraySeeing;
+		var spaceUnit = this.screenWidth;
+		var foodDistance = this.screenWidth;
+		for (var i = 0; i < this.foods.length; i++) {
+			var distance = this.distance(player, this.foods[i]);
+			if (distance < foodDistance)
+				foodDistance = distance;
+		}
+		player.output = [
+			1 - player.energy, // hungry (bad)
+			player.pain, // pain (bad)
+			item == null ? 0.8 : 0, // seeing nothing
+			
+			player.position.x / spaceUnit,
+			player.position.y / spaceUnit,
+			player.size / spaceUnit,
+			0.5 + this.normalizeAngle(player.angle),
+			array.length / this.players.length, // length of array of object type seen
+			item == null ? 0 : (item.position.x - player.position.x) / spaceUnit, // distance x of object seen
+			item == null ? 0 : (item.position.y - player.position.y) / spaceUnit, // distance y of object seen
+			item == null ? 0 : item.size / spaceUnit, // size of object type seen
+			item == null ? 0 : (item.color[2] > 0 ? 0 : 1), // hue of object type seen (red vs blue)
+			item == null ? 0 : (0.5 + this.normalizeAngle(
+				Math.atan2(item.position.y - player.position.y, item.position.x - player.position.x) - player.angle
+			)), // angle diff of object seen
+
+			player.ate ? 1 : 0, // saciety (good)
+			(this.screenWidth - foodDistance) / spaceUnit, // near to food
+			item == null ? 0 : 0.2, // seeing something
+		];
+	},
+
+
+	normalizeAngle: function(angle) {
+		if (angle > Math.PI) angle -= Math.PI;
+		if (angle < -Math.PI) angle += Math.PI;
+		return angle / (2 * Math.PI); // -0.5 to 0.5
+	},
+
+
+	processPhysics: function() {
 		this.players.forEach(player => {
 			// update levels
-			player.pain -= 0.0005;
+			player.pain -= 0.005;
 			if (player.pain < 0) player.pain = 0
 
 			if (player.moved) player.energy -= 5 * this.energyConsumeSpeed;
@@ -256,6 +354,13 @@ var game = {
 	},
 
 
+	distance: function(a, b) {
+		var deltaX = a.position.x - b.position.x;
+		var deltaY = a.position.y - b.position.y;
+		return Math.hypot(deltaX, deltaY);
+	},
+
+
 	collides: function(a, b) { // collision of circles
 		var deltaX = a.position.x - b.position.x;
 		var deltaY = a.position.y - b.position.y;
@@ -266,18 +371,18 @@ var game = {
 
 	checkBounds: function(a) { // limit and returns
 		var out = false;
-		if (a.position.x < 0) {
-			a.position.x = 0;
+		if (a.position.x < a.size) {
+			a.position.x = a.size;
 			out = true;
-		} else if (a.position.x > this.canvasWidth) {
-			a.position.x = this.canvasWidth;
+		} else if (a.position.x > this.screenWidth - a.size) {
+			a.position.x = this.screenWidth - a.size;
 			out = true;
 		}
-		if (a.position.y < 0) {
-			a.position.y = 0;
+		if (a.position.y < a.size) {
+			a.position.y = a.size;
 			out = true;
-		} else if (a.position.y > this.canvasHeight) {
-			a.position.y = this.canvasHeight;
+		} else if (a.position.y > this.screenHeight - a.size) {
+			a.position.y = this.screenHeight - a.size;
 			out = true;
 		}
 		return out;
@@ -321,14 +426,29 @@ var game = {
 
 
 	draw: function() {
-		this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-		this.context.fillStyle = "gray";
-		this.context.fillRect(0, 0, this.canvasWidth, this.canvasHeight); // background
+		canvasCtx.fillStyle = "gray";
+		canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight); // general background
+		canvasCtx.fillStyle = "green";
+		canvasCtx.fillRect(0, 0, this.screenWidth, this.screenHeight); // game background
 		
 		this.foodSpots.forEach(obj => this.drawObject(obj));
 		this.foods.forEach(obj => this.drawObject(obj));
 		this.players.forEach(obj => this.drawObject(obj));
 		this.bullets.forEach(obj => this.drawObject(obj));
+
+		this.players.forEach(player => {
+			if (player.seeing != null) {
+				canvasCtx.strokeStyle = "rgba(0,0,0,0.5)";
+				canvasCtx.beginPath();
+				if (player.seeing == player) {
+					canvasCtx.arc(player.position.x + player.size, player.position.y + player.size, player.size, 0, Math.PI);
+				} else {
+					canvasCtx.moveTo(player.position.x, player.position.y);
+					canvasCtx.lineTo(player.seeing.position.x, player.seeing.position.y);
+				}
+				canvasCtx.stroke();
+			}
+		});
 		
 	},
 	circleSection: 0.7,
@@ -336,10 +456,10 @@ var game = {
 		if (isNaN(obj.position.x) || isNaN(obj.position.y)) {
 			throw new Error("NaN position at object " + obj.type);
 		}
-		this.context.fillStyle = "rgba(" + (255 * obj.color[0]) + "," + (255 * obj.color[1]) + "," + (255 * obj.color[2]) + ",0.5)";
-		this.context.beginPath();
-		this.context.arc(obj.position.x, obj.position.y, obj.size,
+		canvasCtx.fillStyle = "rgba(" + (255 * obj.color[0]) + "," + (255 * obj.color[1]) + "," + (255 * obj.color[2]) + ",0.5)";
+		canvasCtx.beginPath();
+		canvasCtx.arc(obj.position.x, obj.position.y, obj.size,
 			obj.angle + this.circleSection, obj.angle - this.circleSection);
-		this.context.fill();
+		canvasCtx.fill();
 	}
 };
