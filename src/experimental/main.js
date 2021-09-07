@@ -1,11 +1,12 @@
 var interval = null;
+var players = [];
 
 function start() {
     var canvas = document.getElementsByTagName("canvas")[0];
     canvas.width = 1000;
     canvas.height = 500;
 
-    var players = [];
+    players = [];
     for (let i = 0; i < 3; i++) {
         players.push({
             id: i,
